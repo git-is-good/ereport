@@ -1,0 +1,304 @@
+\documentclass[12pt]{article}
+%\documentclass{article}
+ 
+\usepackage[latin1]{inputenc}
+\usepackage[french]{babel}
+ 
+\usepackage[square,sort,comma,numbers]{natbib}
+
+
+\usepackage[nottoc, notlot, notlof]{tocbibind}
+\renewcommand{\bibname}{Reference}
+
+
+\usepackage{amsfonts}
+\usepackage{mathrsfs}
+
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{natbib}
+\usepackage{hyperref}
+\usepackage{verbatim}
+\usepackage{graphicx}
+
+
+\hypersetup{
+	colorlinks,
+	citecolor=cyan,
+	linkcolor=black,
+}
+
+\newtheorem{mydef}{Definition}
+\newtheorem{myprop}{Proposition}
+\newtheorem{mythm}{Theorem}
+\newtheorem{mylem}{Lemma}
+\newtheorem{mycor}{Corollary}
+\newtheorem{mynot}{Notation}
+\newtheorem{myrmk}{Remark}
+\newtheorem{myalgo}{Algorithm}
+\newtheorem{myprob}{Problem}
+
+\newcommand{\itembul}{\item[$\bullet$]}
+\newcommand{\itemdot}{\item[$\cdot$]}
+
+\title{Introduction à la Décomposition de Tenseur}
+
+\begin{document}
+\maketitle
+
+\section{Introduction}
+Tensor est une matrice multidimensionnelle, c'est une généralisation naturelle de la matrice. Une matrice $ A $ de taille $ m \times n $ peut être considérée comme une carte
+$$ A: \mathbb {R} ^ m \times \mathbb {R} ^ n \rightarrow \mathbb {R}, $$
+Tandis qu'un tenseur $ \mathcal {A} $ de taille $ n_1 \times n_2 \times \dots \times n_d $ est une carte
+$$ \mathcal {A}: \mathbb {R} ^ {n_1} \times \mathbb {R} ^ {n_2} \times \dots \times \mathbb {R} ^ {n_d} \rightarrow \mathbb {R} . $$
+
+Malgré la similitude de leurs définitions, la relation réelle entre la matrice et le tenseur est subtile. La maturité de la théorie matricielle repose principalement sur le fait qu'une matrice n'est pas seulement une représentation de données bidimensionnelles, mais aussi une représentation d'un opérateur linéaire. Le point de vue d'un opérateur linéaire fournit à la matrice d'énormes outils pour analyser sa décomposition et son approximation. Malheureusement, le tenseur n'héritent pas de cet avantage. Dans le domaine de la décomposition des tenseurs, elle ne peut être interprétée que comme une collection de données de nature multidimensionnelle.
+
+La disparité entre la théorie du tenseur et de la matrice, dans une certaine mesure, a déclenché davantage de recherches explorant de multiples aspects de la structure du tenseur. Par exemple, 2 premières méthodes de décomposition des tenseurs, la décomposition du CP et la décomposition de Tucker sont des généralisations de la décomposition de la valeur de la matrice sous différentes perspectives. Il s'avère qu'aucune de ces généralisations n'a toutes les propriétés attrayantes d'une décomposition de la valeur singulière de la matrice. Au lieu de cela, la décomposition du CP présente de nombreux comportements pathologiques, qui sont en effet l'un des principaux sujets de recherche précoce dans la factorisation des tenseurs.
+
+Cependant, bien que la partie théorique de la décomposition des tenseurs soit loin d'être mature, son application à la pratique réaliste a déjà couvert un domaine immense, y compris l'analyse du signal, le processus d'image et la chimie computationnelle, etc. 
+
+Au cours des dernières années, l'apprentissage statistique et l'exploration de données sont l'un des plus prolifiques domaines. La technique de la décomposition de tenseur s'applique à ce domaine, car dans des circonstances réalistes, un résultat est généralement lié à plusieurs facteurs, ce qui donne lieu à une représentation naturelle par tenseur. En effet, il y a déjà nombreuse applications où l'on analyse des structures intrinsèques par la décomposition de tenseur. Par exemple, les systèmes de recommandation basé sur la décomposition de CP, l'analyse de réseau complexe utilisant la décomposition CP et Tucker, la vision par ordinateur basée sur la décomposition du tenseur non-négatif, etc.
+
+D'autre part, la décomposition des tenseurs sans aucune interprétation sémantique peut encore être utile. Une autre zone où le tensor est largement utilisé est la compression de données, à la fois pour des données de dimension relativement faible et une dimension extrêmement élevée. Dans de tels cas, la décomposition des tenseurs est principalement un moyen d'approximer les données avec une réduction drastique de sa taille, même si une telle décomposition est significative. Pour les données à faible dimension, l'approximation de Tucker a été considérée comme une technique de compression de données depuis longtemps. Étant donné que la quantité de données provenant de l'informatique scientifique est devenue de plus en plus grande, une approximation raisonnable avec une grande précision est en effet nécessaire. Dans \cite {koldapara}, une décomposition parallèle de Tucker est implémentée, démontrant un énorme degré de compression avec seulement une petite perte de précision.
+
+
+Pendant ce temps, la compression d'un tensor avec une dimension extrêmement élevée a attiré beaucoup d'intention dans les dernières avancées de l'approximation de bas niveau basé sur le tenseur. En partie en raison de l'analyse numérique impliquant des PDE partielles stochastiques et d'autres PDE avec une taille énorme de paramètres, où une représentation d'une fonction avec plus de 1000 paramètres sont demandés, de nouvelles innovations dans l'approximation des tenseurs ont été avancées au cours des dix dernières années. Dans \cite {ttree} et \cite {ttrain}, de nouveaux formats de décomposition des tenseurs, du format Tensor Tree et Tensor Train, qui sont particulières
+
+\section{Décomposition de CP}
+La notion de la décomposition CP(CANDECOMP/PARAFAC) remonte aux années 1920. Après plusieurs réintroductions, ce format de décomposition est devenu l'une des décompositions tenseurs les plus utilisées aujourd'hui. 
+
+Mathématiquement, la décomposition du CP est une généralisation naturelle d'une interprétation particulière de la décomposition en valeurs singulière des matrices. Soit $A$ être une matrice de taille $ m \times n $: On effectue une SVD sur $ A $, on obtient
+$$ A = U \Sigma V^T, $$
+Où $U, V$ sont des matrices orthogonales de taille $m \times m$ et $ n \times n $ respectivement, et $ \Sigma $ est une matrice diagonale dont la ligne diagonale se compose de toutes les valeurs singulières en ordre décroissant.
+
+Nous considérons $ U $ comme une juxtaposition de vecteurs orthonormales des colonnes: $ U = (u_1, \dots, u_m) $, où $ u_1 \dots u_m $ sont des vecteurs de taille $ m $. De la même façon, $ V = (v_1, \dots, v_n) $. Si $ \sigma_1, \dots, \sigma_r $, où $ 1 \leq r \leq \min (m, n) $ est le rang de $ A $, sont toutes les valeurs singulières de $ A $, alors la décomposition ci-dessus peut être simplement réécrit comme
+$$ A = \sum_ {i = 1} ^ r \sigma_i u_i v_i ^ T. $$
+
+\begin{mydef}
+Soit $a^1, \dots a^d$ $d$ vecteurs, où $a^i$ est de taille $n_i$, $\forall 1 \leq i \leq d$. Alors le tenseur $a^1 \otimes a^2 \dots \otimes a^d$ est défini par element par:
+$$ (a^1 \otimes a^2 \dots \otimes a^d)(i_1, i_2, \dots, i_d) := a^1(i_1) a^2(i_2) \dots a^d(i_d),$$
+où $1 \leq i_s \leq n_s$ for all $1 \leq s \leq d$. De plus, on appelle un tenseur de cette forme un tenseur de rang un.
+\end{mydef}
+
+\begin {mydef} {(décomposition du CP)}
+\label {defcp}
+Soit $ \mathcal {A} $ un tenseur de taille $ n_1 \times \dots \times n_d $, une décomposition de CP de $ \mathcal {A} $ avec $ r $ components est sous la forme:
+$$ \mathcal {A} \approx \sum_ {i = 1} ^ r \lambda_i u_i ^ 1 \otimes u_i ^ 2 \otimes \dots \otimes u_i ^ d, $$
+Où $ u_i ^ s $ est un vecteur de taille $ n_s $ et norme euclidienne 1, pour tous $ 1 \leq s \leq d $, et $ 1 \leq i \leq r $.
+\end {mydef}
+
+La suivante est une visualisation de la décomposition du CP:
+
+\centerline{\includegraphics[scale=0.6]{cpdecom}}
+
+La décomposition du CP a attiré de nombreuses études théoriques, malgré son comportement plutôt pathologique comparé à sa homologue matricielle. On va illustrer certaines des propriétés les plus remarquables:
+
+La première partie concerne la décomposition exacte d'un nombre minimal de composants. Traditionnellement, le rang d'un tenseur est défini comme le plus petit $ r $ dans la définition ci-dessus, tel qu'il existe des vecteurs $ u_i ^ s $, $ 1 \leq s \leq d $ et $ 1 \leq i \leq r $ et la décomposition ci-dessus soit une égalité exacte:
+$$ \mathcal {A} = \sum_ {i = 1} ^ r \lambda_i u_i ^ 1 \otimes u_i ^ 2 \otimes \dots \otimes u_i ^ d. $$
+
+Dans le cas d'une matrice, une telle décomposition exacte est realisée par l'algorithme SVD. Cependant, pour la décomposition générale du CP, le problème de la détermination du rang de tenseur est démontrée NP-complet. Par conséquent, il est impossible de déterminer ce rang dans la pratique, sans parler d'un algorithme pour calculer une instance de cette décomposition exacte du CP.
+
+De plus, même si nous attendons seulement une approximation, la situation est encore bizarre, car la notion de meilleure approximation de avec le nombre de composants fixés peut être \textit{ill-posed}. Le phénomène de la mauvaise comportment est en grande partie dû à l'effet d'annulation. C'est-à-dire que l'ampleur de chaque tenseur individuel devient infiniment grande, et pendant ce temps, la somme finale est de plus en plus proche du tenseur original en raison de l'annulation mutuelle. Du coup, lorsque l'on utilise la décomposition du CP comme une tactique d'approximation, le concept de meilleure approximation pourrait avoir rien de sens.
+
+\begin {myalgo} {(ALS pour la décomposition du CP)}
+Nous maintenons les notations dans cette ci-dessus, alors l'algorithme est le suivant:
+\begin {itemize}
+\itembul Initialisation: choisir une valeur initiale pour chaque $ U_1, \dots, U_d $
+\itembul label:
+\begin {itemize}
+\item pour $i$ de $1$ à $d$:
+\begin{itemize}
+\itemdot fixer $ U_j, \forall 1 \leq j \leq d \text { et } j \neq i $, résoudre le problème d'optimisation pour $ U_i $ par la méthode des moindres carrés 
+\itemdot  mettre à jour $ U_i $ par le minimiseur.
+\end{itemize}
+\item vérifier les conditions d'arrêt. Si les conditions d'arrêt ne sont pas satisfaits, retouner à "label".
+\end {itemize}
+\itembul finalisation: sortie $ U_1, \dots, U_d $
+\end {itemize}
+ La condition d'arrêt peut être 1, la diminution de la fonction objective est stagnante; 2, la fonction objectif est assez petite, 3, le nombre d'itérations maximum atteint, etc.
+\end {myalgo}
+
+\section{Décomposition de Tucker}
+
+\begin{mydef}{(multiplication tenseur-matrice)}
+Soit $\mathcal{A}$ un tenseur de taille $n_1 \times n_2 \times \dots \times n_d$, $M$ une matrice de taille $m \times n_k$ où $1 \leq k \leq d$. Alors le production tenseur matrix $\mathcal{A} \times_k M$ est un tenseur de taille $n_1 \times \dots n_{k-1} \times m \times n_{k+1} \times \dots \times n_d$ défini par élément par:
+\begin{alignat*}{9}
+& (\mathcal{A} \times_k M)(i_1, \dots, i_{k-1}, s, i_{k+1}, \dots, i_d) \\
+:= &\sum_{t = 1}^{n_k} M(s, t) A(i_1, \dots, i_{k-1}, t, i_{k+1}, \dots, i_d),
+\end{alignat*}
+pour $1 \leq s \leq m$ et $1 \leq i_l \leq n_l, \forall 1 \leq l \leq d, l \neq k$.
+\end{mydef}
+
+On peur simplement démontrer que cette multiplication est commutative:
+$$\mathcal{A} \times_{k_1} M_1 \times_{k_2} M_2 = \mathcal{A} \times_{k_2} M_2 \times_{k_1} M_1\text{, for all } k_1 \neq k_2.$$
+
+
+
+\begin {mydef} {(Décomposition de Tucker)}
+\label {tuckerd}
+Soit $ \mathcal {A} $ un tenseur de taille $ n_1 \times \dots \times n_d $. $ U_i, 1 \leq i \leq d $ soit une collection de matrices de taille $ n_i \times m_i $ respectivement, de sorte que pour chaque $ U_i $, $ 1 \leq i \leq d $, toutes ses colonnes sont orthonormées. Ensuite, une décomposition de Tucker par rapport à ces matrices orthogonales est un tenseur de base $ \mathcal {B} $:
+$$ \mathcal {B}: = \mathcal {A} \times_1 U_1 ^ T \times_2 \dots \times_d U_d ^ T. $$
+En tant que moyen d'approximation, on peut récupérer une matrice approximative $ \tilde {\mathcal {A}} $ de $ A $ par
+$$ \tilde {\mathcal {A}}: = \mathcal {B} \times_1 U_1 \times_2 \dots \times_d U_d. $$.
+\end {mydef}
+
+L'illustration suivante est une explication intuitive. Ainsi, d'après cette illustration, la raison que la décomposition de Tucker est un moyen efficace pour compresser est claire.
+
+\centerline{\includegraphics[scale=0.6]{tuckerdecom}}
+
+Étant donné un algorithme qui nous permet de approximer une matrix $A$ par $A \approx QQ^TA$, où $Q$ est une matrice dont tous les colonnes sont orthonormales, on peut construire un algorithm pour calculer l'approximation de tensor en format de Tucker.
+
+\begin {myalgo}
+Étant donné un tenseur $ \mathcal {A} $ de la taille $ n_1 \times \dots \times n_d $ qui doit être factorisé, cet algorithme calcule un tenseur de noyau $ \mathcal {B} $ de la taille $m_1 \times \dots \times m_d$ et une collection de matrices $ \{U_i \} _ {i = 1} ^ d $ de taille $n_i \times m_i$ respectivement avec des colonnes orthonormales:
+\begin {itemize}
+\itembul initialisation: $ \mathcal {A} _0 \leftarrow \mathcal {A} $
+\itembul pour $ i $ de $ 1 $ à $ d $:
+\begin {itemize}
+\item considérer $\mathcal{A}_{i-1}$ comme une matrice de la taille $m_1 \times \dots \times m_{i-1} \times n_i \times \dots \times n_d$. calculer $\mathcal{A}_i := \mathcal{A}_{i-1} \times_i U_i^T$ (i.e. $\mathcal {A} _ {i-1} \approx \mathcal {A} _i \times_i U_i $) en appliquant l'algorithme donné pour la matrice
+\end {itemize}
+\itembul finalisation: $ \mathcal {B} \leftarrow \mathcal {A} _d $, obtenir $ \mathcal {A} \approx \mathcal {B} \times_1 U_1 \dots \times_d U_d $
+\end {itemize}
+\end {myalgo}
+
+
+\begin {mythm}
+Dans l'algorithme ci-dessus, supposons à l'étape $ i $, $ 1 \leq i \leq d $, on introduit une erreur de troncation $ \epsilon_i $ dans la décomposition de matrice, c'est-à-dire,
+$$ \epsilon_i: = || \mathcal {A}_{i - 1} - \mathcal{A}_i \times_i U_i ||. $$
+Alors, la valeur approximative finale $ \tilde {\mathcal {A}}: = \mathcal {B} \times_1 U_1 \dots \times_d U_d $ satisfait:
+$$ || \mathcal {A} - \tilde {\mathcal {A}} || ^ 2 = \sum_ {i = 1} ^ d \epsilon_i ^ 2. $$
+\end{mythm}
+
+\begin{mythm}
+Dans l'algorithme ci-dessus, on suppose que $\mathcal{A}_{best,i}$ soit l'approximation engendrée par SVD tronquée de la même rang à l'étape $i$, et $\mathcal{A}_{i-1} \approx \mathcal{A}_i \times_i  U_i $ satisfait
+$$ || \mathcal{A}_{i-1} - \mathcal{A}_i \times_i U_i || \leq C || \mathcal{A}_{i-1} - \mathcal{A}_{best,i} ||, $$
+où $C > 0$ est une constante indépendante de $i$.
+Soit $ \mathcal {A} _ {best} $ la meilleure approximation dans la contrainte de la même taille de tenseur de noyau, alors
+$$ || \mathcal {A} - \tilde {\mathcal {A}} || \leq \sqrt {d} C || \mathcal {A} - \mathcal {A}_{best} ||. $$
+\end {mythm}
+
+
+L'algorithme ci-dessus est abstrait, dans le sens où l'algorithme de décomposition matricielle peut être n'importe lequel des algorithme qui peut approximer $A$ par $A \approx QQ^TA$. Typiquement, le choix le plus courant est la SVD tronquée. 
+
+\subsection{Algorithme Randomisé}
+
+\begin{myalgo}{(Algoritm 4.1 in \cite{randAppro})}
+Étant donné une matrice $m \times n$ $A$, et un entier $l$, l'algorithme suivant calcule une matrice  $m \times l$ orthonormale  $Q$, dont l'espace de rang approxime l'espace de rang de $A$.
+\begin{itemize}
+\item Engendrer une matrice $n \times l$ aléatoire de Gauss $\Omega$
+\item Construire l'espace approximé de l'espace de rang $Y := A\Omega$
+\item Orthogonaliser $Y$ par factorisation de QR: $Y = QR$
+\end{itemize}
+On a $QQ^TA \approx A$.
+\end{myalgo}
+
+\begin{myalgo}
+Étant donné une tenseur $\mathcal{A}$ de la taille $n_1 \times \dots \times n_d$, cet algorithme calcule a collection of matrices $\{Q_i\}_{i = 1}^d$ with orthonormal columns and a core tensor $\mathcal{B}$. $Q_i$ is of size $n_i \times (m_i + 6)$, $\forall 1 \leq i \leq d$, and $\mathcal{B}$ is of size $(m_1 + 6)  \times \dots \times (m_d + 6)$.
+\begin{itemize}
+\item initialization: set $\mathcal{A}_0 \leftarrow \mathcal{A}$
+\item pour $i$ de $1$ à $d$:
+	\begin{itemize}
+		\item considérer $\mathcal{A}_{i-1}$ comme une matrice de la taille $n_i \times (m_1+6) \dots (m_{i-1}+6)  n_{i+1} \dots n_d $
+		\item engendrer une matrice $n \times l$ aléatoire de Gauss standard $\Omega$ de la taille $(m_1+6) \dots (m_{i-1}+6)  n_{i+1} \dots n_d \times (m_i + 6)$
+		\item calculer $Y_i := C_i \Omega_i$, $Y_i$ is of size $n_i \times (m_i + 6)$
+		\item calculer la factorisation QR  de $Y_i$: $Y_i = Q_i R_i$
+		\item calculer $\mathcal{A}_i \leftarrow \mathcal{A}_{i-1} \times_i Q_i^T$, stoker $Q_i$ comme une des matrices que l'on a besoin
+	\end{itemize}
+\item finalization: $\mathcal{B} \leftarrow \mathcal{A}_d$
+\end{itemize}
+\end{myalgo}
+
+\begin{mythm}
+On utilise les notations dans l'algorithm ci-dessus. Soit $\mathcal{A}_{best}'$ la meilleure approximation du tenseur $\mathcal{A}$ sous la restriction de da taille du tenseur noyau $m_1 \times \dots \times m_d$. 
+Alors l'approximation par cet algorithm satisfait
+$$ || \mathcal{A} - \mathcal{B} \times_1 Q_1 \dots \times_d Q_d || \leq 32 \sqrt{d} || \mathcal{A} -\mathcal{A}_{best}' ||, $$
+avec une probabilité d'échec au plus $1 - 0.9981 ^ d$.
+\end{mythm}
+
+Nous notons que la notation d'apostrophe dans $ \mathcal {A}_{best} '$ est intentionnelle, pour souligner le fait que cette meilleure approximation est parmi toutes les approximations de la taille du tenseur de base $ m_1 \times \dots \times m_d $, au lieu de $ (m_1 + 6) \times \dots \times (m_d + 6) $. Et pratique, dans la décomposition de Tucker, la dimension du tenseur est généralement très faible, et il est assez rare de construire une décomposition de Tucker d'une dimension supérieure à 10. La liste suivante montre explicitement la probabilité d'échec
+
+\begin{center}
+	\begin{tabular}{ | c | c | c | c | c | c | c | c | c | c | c |  }
+\hline
+d   & 3   & 4  & 5  & 6   & 7   & 8   & 9   & 10 \\ \hline
+prob. d'échec   & 0.006   & 0.008   & 0.009   & 0.011   & 0.013   & 0.015   & 0.017   & 0.019\\ \hline
+	\end{tabular}
+\end{center}
+Ainsi, la probabilité d'échec est très faible. 
+
+Dans le graphique ci-dessous, nous présentons les performances typiques de cet algorithme s'appliquant à un tenseur aléatoire. Les expérience étaient effectuées par Tensor Toolbox \cite{koldatoolbox}. Nous mesurons l'erreur relative entre notre algorithme et HOOI. Le tenseur dans notre expérience est de la taille $200 \times 200 \times 200$. Dans tous les expériences suivantes, on utilise les tenseurs de cette taille.
+
+Dans le graphique, le "ST" désigne "séquentiellement tronqué", c'est la stratégie par défaut dans notre énoncé d'algorithme. D'autre part, nous pouvons effectuer l'algorithme sans troncature séquentielle (sans "ST" dans le graphique). Apparemment, si nous ne tronçons pas à chaque étape, le coût de calcul augmentera. En fait, comme cela est suggéré dans \cite{trunctucker} pour l'algorithme HOSVD, l'absence de troncature séquentielle endommage également la précision dans la plupart des cas. Inspiré par cette observation, nous effectuer aussi la décomposition sans troncature séquentielle pour comparer. On peut conclure d'après les résultats que l'implementation avec troncature séquentielle peut atteindre une meilleure précision aussi pour cet algorithme randomisé.
+
+\centerline{\includegraphics[scale=0.7]{tensorRandom}}
+
+
+\subsection{Algorithme d'RRQR}
+
+En effet, il y a un algorithme qui peut contrôler l'erreur d'approximation en théorie. On peut trouver une description détaillée de cet algorithme dans \cite{qrcp}. 
+
+\begin{mythm}
+\label{rrqrenh}
+Soit $A$ une matrice de la taille $m \times n$. On calcule strong RRQR avec troncature à position $k$, paramètre $f > 1$ pour 
+$$ AP \approx QR. $$
+Alors $QQ^TA$ est une approximation de $A$, qui satisfait 
+$$ || A - QQ^TA || \leq  (1 + f^2k(n-k))^{1/2} || A - A_{svd\_at\_k} ||  $$
+\end{mythm}
+
+En utilisant cet algorithme pour les tenseurs, on obtient l'estimation théorique:
+
+\begin{mythm}
+On maintient les notation de l'algorithme abstrait ce-dessus. Soit $\tilde{\mathcal{A}} :=  \mathcal{B} \times_1 U_1 \dots \times_d U_d $, $A_{best}$  la meilleure approximation sous la restriction de la taille du tensor noyau. Alors l'erreur engendrée par l'algorithm de strong RRQR satisfait:
+$$ || \mathcal{A} - \tilde{\mathcal{A}} || \leq \sqrt{1 + f^2 \Pi_{i = 1}^d n_d} || \mathcal{A} - \mathcal{A}_{best} || $$
+\end{mythm}
+
+Ce théorique n'est pas si attrayant, car le terme $ \Pi_ {i = 1} ^ d n_d $ peut normalement être extrêmement grand. Cependant, selon nos expériences numériques, la grandeur de l'erreur est nettement inférieure à cette prédiction.
+
+
+\centerline{\includegraphics[scale=0.7]{tensorRRQR}}
+
+Nous concluions selon les résultats d'expérience que la précision de l'algorithme RRQR est typiquement similaire comme l'algorithme randomisé. Toutefois, nous avons essayé d'améliorer les résultats en théorie et en pratique. Nous introduisons une étape de l'itération de puissance avant de réaliser strong RRQR.
+
+
+
+\begin{mythm}
+\label{rrqrenh}
+Soit $A$ une matrice de la taille $m \times n$, et $q \geq 0$ un entier. On calcule strong RRQR avec troncature à position $k$, paramètre $f > 1$ pour 
+$$ (AA^T) ^q  AP \approx QR. $$
+Alors $QQ^TA$ est aussi une approximation de $A$, qui satisfait 
+$$ || A - QQ^TA || \leq  (m-k)^\frac{2q}{2q+1} (1 + f^2k(n-k))^\frac{1}{2(2q+1)} || A - A_{svd\_at\_k} ||  $$
+\end{mythm}
+
+Nous examinons d'abord ce que ce théorème implique. Le facteur $ (1 + f ^ 2k (n-k)) $ est considérablement réduit à $ (1 + f^2k (n-k)) ^ \frac {1} {2q + 1} $, au détriment d'un nouveau facteur encouru Délimité par $ (m-k) ^ \frac {2q} {2q + 1} \leq m - k $. Dans le cas de la décomposition du tenseur, en particulier pour les étapes initiales, la matrice à approcher est généralement de taille $ m \times n $ avec $ m \ll n $. Pour de telles matrices, la limite théorique de l'approximation RRQR sera considérablement améliorée. De l'autre côté, on n'a pas besoin de choisir une constante $q$ très grand, $q = 1 \text{ ou } 2$ suffit de diminuer $ (1 + f^2k (n-k)) ^ \frac {1} {2q + 1} $ efficacement. 
+
+L'analyse théorique est en accord avec le résultat expérimental. Le graphique suivant est obtenu par choisir $q = 1$ dans de théorème ci-dessus. Avec le même tenseur, le résultat fourni par cette version améliorée a été considérablement amélioré lorsque $ k $ est petit.
+
+\centerline{\includegraphics[scale=0.7]{tensorRRQREnh}}
+
+Nous notons que le but de l'itération de puissance est pour amplifier les différence entre les grands valeurs singulier et les petits valeurs siguliers. Si l'on a une projecteur orthogonal aléatoire $P$, $(AP)(AP)^T$ peut aussi approximer les valeurs singuliers. Du coup, en pratique, on peut choisir des colonnes de $A$ aléatoirement, en constuisant $\tilde{A}$. Ensuite, on fait RRQR pour $\tilde{A}\tilde{A}^TA$. Selon des expériences, les résultats sont bien même si l'on choit seulement $1/10$ des colonne comme l'échantillon.
+
+
+\section{Décomposition de Train Tenseur}
+
+Bien que la décomposition de Tucker soit un moyen efficace de réduire la taille des données pour un problème de dimension 3 ou 4, l'espace nécessaire pour stocker se développe de manière exponentielle par rapport à la dimension. Par exemple, considérons un tenseur de dimension $ d $ avec la longueur $n$ dans chaque dimension. Pour stocker le tenseur original, on a besoin de $ n ^ d $ space. Si nous tronçons ce tenseur avec la décomposition de Tucker à $ k $ uniformément, nous avons encore besoin de $ k ^ d + knd $ éspace. Étant donné que la dimension $ d $ apparaît comme un exposant dans la représentation finale, le stockage devient inacceptable dès que $ d $ augmente.
+
+La circonstance réele où $ d $ est significativement élevé n'est pas rare dans les applications aujourd'hui, y compris les finances de calcul, la chimie quantique et les équations différentielles partielles stochastiques. Lorsque $ d $ devient aussi élevé que 100 ou même 1000, nous devons trouver un nouveau schéma de représentation pour briser \textit{the curse of dimensionality}.
+
+\ Begin {mydef} {(Décomposition du train de capteurs)}
+Soit $ \ mathcal {A} $ un tenseur de taille $ n_1 \ times \ dots \ times n_d $. Une décomposition du train tensoriel de $ \ mathcal {A} $ se compose d'une collection de tenseurs tridimensionnels:
+$$ G_1, G_2, \ dots, G_d, $$
+Où $ G_i $ est de taille $ n_i \ times r_ {i-1} \ times r_i, \ forall 1 \ leq i \ leq d $, avec $ r_0 = r_d = 1 $.
+
+Cette collection de tenseurs tridimensionnels définit approximativement $ \ tilde {\ mathcal {A}} \ approx \ mathcal {A} $ par:
+$$ \ tilde {\ mathcal {A}} (i_1, \ dots, i_d): = \ sum_ {1 \ leq t_0 \ leq r_0, \ dots 1 \ leq t_d \ leq r_d} G_1 (i_1, t_0, t_1) \ Dots G_d (i_d, t_ {d-1}, t_d). $$
+\ End {mydef}
+
+\centerline{\includegraphics[scale=0.5]{ttdecom}}
+
+
+\bibliographystyle{apa}
+\bibliography{mybib} 
+
+\end{document}
+
+
